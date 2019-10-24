@@ -58,8 +58,10 @@ public class Catalog {
      * @param file the contents of the table to add;  file.getId() is the identfier of
      *    this file/tupledesc param for the calls getTupleDesc and getFile
      */
-    public void addTable(DbFile file) {
-        addTable(file, (UUID.randomUUID()).toString());
+    public String addTable(DbFile file) {
+        String name = (UUID.randomUUID()).toString();
+        addTable(file, name);
+        return name;
     }
 
     /**

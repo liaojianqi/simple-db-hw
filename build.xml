@@ -32,7 +32,7 @@
 	</path>
 	<!-- Common macro for compiling Java source -->
 	<macrodef name="Compile">
-		<attribute name="srcdir"/>
+		<attribute name="srcdir" />
 		<attribute name="destdir" />
 		<element name="compileoptions" implicit="true" optional="true" />
 		<sequential>

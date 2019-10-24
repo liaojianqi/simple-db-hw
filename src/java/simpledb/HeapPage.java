@@ -19,6 +19,7 @@ public class HeapPage implements Page {
     final byte header[];
     final Tuple tuples[];
     final int numSlots;
+    DataInputStream dis;
 
     byte[] oldData;
     private final Byte oldDataLock=new Byte((byte)0);
@@ -43,7 +44,7 @@ public class HeapPage implements Page {
         this.pid = id;
         this.td = Database.getCatalog().getTupleDesc(id.getTableId());
         this.numSlots = getNumTuples();
-        DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data));
+        dis = new DataInputStream(new ByteArrayInputStream(data));
 
         // allocate and read the header slots of this page
         header = new byte[getHeaderSize()];
@@ -110,6 +111,10 @@ public class HeapPage implements Page {
         return this.pid;
     }
 
+
+    public Tuple readNextTuple(int slotId) throws NoSuchElementException {
+        return this.readNextTuple(this.dis, slotId);
+    }
     /**
      * Suck up tuples from the source file.
      */
@@ -172,7 +177,6 @@ public class HeapPage implements Page {
 
         // create the tuples
         for (int i=0; i<tuples.length; i++) {
-
             // empty slot
             if (!isSlotUsed(i)) {
                 for (int j=0; j<td.getSize(); j++) {
@@ -185,13 +189,11 @@ public class HeapPage implements Page {
                 }
                 continue;
             }
-
             // non-empty slot
             for (int j=0; j<td.numFields(); j++) {
                 Field f = tuples[i].getField(j);
                 try {
-                    f.serialize(dos);
-                
+                    f.serialize(dos);     
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
