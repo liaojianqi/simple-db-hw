@@ -148,7 +148,7 @@ class HeapFileIterator extends AbstractDbFileIterator {
         int tbId = Database.getCatalog().getTableId(f.getTbName());
         pgNo = 0;
         pid = new HeapPageId(tbId, pgNo);
-        page = (HeapPage)f.readPage((PageId)pid);
+        page = (HeapPage)Database.getBufferPool().getPage(tid, pid, null);
         it = page.iterator();
 	}
 
@@ -165,9 +165,13 @@ class HeapFileIterator extends AbstractDbFileIterator {
             return it.next();
         }
         // next
+        int tbId = Database.getCatalog().getTableId(f.getTbName());
         pgNo++;
-        pid = new HeapPageId(0, pgNo);
-        page = (HeapPage)f.readPage((PageId)pid);
+
+        if (pgNo >= f.numPages()) return null;
+        pid = new HeapPageId(tbId, pgNo);
+        // page = (HeapPage)f.readPage((PageId)pid);
+        page = (HeapPage)Database.getBufferPool().getPage(tid, pid, null);
         if (page == null) return null;
         it = page.iterator();
         if (it.hasNext()) {
