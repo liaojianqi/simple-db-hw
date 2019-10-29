@@ -15,7 +15,7 @@ public abstract class Operator implements OpIterator {
         if (!this.open)
             throw new IllegalStateException("Operator not yet open");
         
-        if (next == null)
+        if (next == null) 
             next = fetchNext();
         return next != null;
     }

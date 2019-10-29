@@ -34,7 +34,7 @@ public class StringField implements Field {
 	}
 
 	public String toString() {
-		return value;
+		return "Str:"+value;
 	}
 
 	public int hashCode() {

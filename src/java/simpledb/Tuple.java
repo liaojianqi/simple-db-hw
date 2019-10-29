@@ -93,7 +93,7 @@ public class Tuple implements Serializable {
     public String toString() {
         StringBuffer sb = new StringBuffer();
         for (int i=0; i< this.fields.size(); i++) {
-            sb.append(this.getField(i).toString());
+            sb.append(this.getField(i).toString());            
             if (i != this.fields.size() - 1) {
                 sb.append("\t");
             }

@@ -25,7 +25,7 @@ public class IntField implements Field {
     }
 
     public String toString() {
-        return Integer.toString(value);
+        return "Int:"+Integer.toString(value);
     }
 
     public int hashCode() {
