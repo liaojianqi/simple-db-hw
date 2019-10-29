@@ -120,7 +120,7 @@ public class SeqScan implements OpIterator {
 
     public void close() {
         // some code goes here
-        it.close();
+        if (it != null) it.close();
         hf = null;
         it = null;
     }

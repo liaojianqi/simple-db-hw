@@ -30,6 +30,9 @@ public class Tuple implements Serializable {
     public Tuple(TupleDesc td) {
         this.td = td;
         fields = new Vector<Field>();
+        for (int i=0;i<td.numFields();i++) {
+            fields.add(null);
+        }
     }
 
     /**
@@ -66,7 +69,6 @@ public class Tuple implements Serializable {
      *            new value for the field.
      */
     public void setField(int i, Field f) {
-        while (i >= this.fields.size()) this.fields.add(null);
         fields.set(i, f);
     }
 
@@ -77,7 +79,6 @@ public class Tuple implements Serializable {
      *            field index to return. Must be a valid index.
      */
     public Field getField(int i) {
-        if (i >= this.fields.size()) return null;
         return this.fields.get(i);
     }
 
@@ -115,5 +116,20 @@ public class Tuple implements Serializable {
     public void resetTupleDesc(TupleDesc td)
     {
         this.td = td;
+    }
+
+    // add by liaojianqi
+    public static Tuple merge(Tuple t1, Tuple t2) {
+        Tuple t = new Tuple(TupleDesc.merge(t1.getTupleDesc(), t2.getTupleDesc()));
+        int index = 0;
+        Iterator<Field> it1 = t1.fields();
+        while (it1.hasNext()) {
+            t.setField(index++, it1.next());
+        }
+        Iterator<Field> it2 = t2.fields();
+        while (it2.hasNext()) {
+            t.setField(index++, it2.next());
+        }
+        return t;
     }
 }
