@@ -102,7 +102,6 @@ public class IntegerAggregator implements Aggregator {
             break;
         }
     }
-    // TODO: gbF
 
     /**
      * Create a OpIterator over group aggregate results.

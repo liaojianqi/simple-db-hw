@@ -24,6 +24,8 @@ public class HeapPage implements Page {
     byte[] oldData;
     private final Byte oldDataLock=new Byte((byte)0);
 
+    TransactionId dirtier;
+
     /**
      * Create a HeapPage from a set of bytes of data read from disk.
      * The format of a HeapPage is a set of header bytes indicating
@@ -179,13 +181,10 @@ public class HeapPage implements Page {
         for (int i=0; i<tuples.length; i++) {
             // empty slot
             if (!isSlotUsed(i)) {
-                for (int j=0; j<td.getSize(); j++) {
-                    try {
-                        dos.writeByte(0);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
+                try {
+                    dos.write(new byte[td.getSize()]);
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
                 continue;
             }
@@ -242,6 +241,12 @@ public class HeapPage implements Page {
     public void deleteTuple(Tuple t) throws DbException {
         // some code goes here
         // not necessary for lab1
+        RecordId id = t.getRecordId();
+        if (id.getPageId() != getId()) throw new DbException("tuple not exist in this page");
+        if (getNumEmptySlots() == getNumTuples()) throw new DbException("page already empty");
+        int slotId = id.getTupleNumber();
+        // set header
+        markSlotUsed(slotId, false);
     }
 
     /**
@@ -254,6 +259,27 @@ public class HeapPage implements Page {
     public void insertTuple(Tuple t) throws DbException {
         // some code goes here
         // not necessary for lab1
+        RecordId id = t.getRecordId();
+        // if (id.getPageId() != getId()) throw new DbException("tuple not exist in this page");
+        if (!t.getTupleDesc().equals(this.td)) throw new DbException("tupledesc is mismatch.");
+        if (getNumEmptySlots() == 0) throw new DbException("page is full.");
+        // add tuple
+        for (int i = 0; i < this.numSlots; i++) {
+            if (!this.isSlotUsed(i)) {
+                // add to this slot
+                insertTuple(t, i);
+                return ;
+            }
+        }
+        // TODO: the tuple should be updated to reflect that it is now stored on this page.
+    }
+
+    // add by liaojianqi, insert t in slotId.
+    // !!! Note this method not actually add in disk
+    public void insertTuple(Tuple t, int slotId) throws DbException {
+        tuples[slotId] = t;
+        t.setRecordId(new RecordId(pid, slotId));
+        markSlotUsed(slotId, true);
     }
 
     /**
@@ -262,7 +288,12 @@ public class HeapPage implements Page {
      */
     public void markDirty(boolean dirty, TransactionId tid) {
         // some code goes here
-	// not necessary for lab1
+        // not necessary for lab1
+        if (dirty) {
+            dirtier = tid;
+        } else {
+            dirtier = null;
+        }
     }
 
     /**
@@ -270,8 +301,8 @@ public class HeapPage implements Page {
      */
     public TransactionId isDirty() {
         // some code goes here
-	// Not necessary for lab1
-        return null;      
+	    // Not necessary for lab1
+        return dirtier;  
     }
 
     /**
@@ -290,7 +321,6 @@ public class HeapPage implements Page {
      */
     public boolean isSlotUsed(int i) {
         if (i >= this.numSlots) return false;
-        // System.out.println(this.header[i/8]);
         byte b = this.header[i/8];
         return ((b >> (i%8)) & 1) == 1;
     }
@@ -301,6 +331,27 @@ public class HeapPage implements Page {
     private void markSlotUsed(int i, boolean value) {
         // some code goes here
         // not necessary for lab1
+        if (i >= this.numSlots) return ;
+        byte b = this.header[i/8];
+        // System.out.println("before: " + convertByte2String(b));
+        if (value) {
+            byte one = (byte)(1 << (i%8));
+            // System.out.println(i%8);
+            // System.out.println(convertByte2String(one));
+            b = (byte)(b|one);
+        } else {
+            byte zero = (byte)(1 << (i%8));
+            zero = (byte)(~zero);
+            // System.out.println(i%8);
+            // System.out.println(convertByte2String(zero));
+            b = (byte)(b&zero);
+        }
+        // System.out.println("after: " + convertByte2String(b));
+        this.header[i/8] = b;
+    }
+
+    private String convertByte2String(byte b) {
+        return String.format("%8s", Integer.toBinaryString(b & 0xFF)).replace(' ', '0');
     }
 
     /**
