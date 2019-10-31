@@ -242,7 +242,7 @@ public class HeapPage implements Page {
         // some code goes here
         // not necessary for lab1
         RecordId id = t.getRecordId();
-        if (id.getPageId() != getId()) throw new DbException("tuple not exist in this page");
+        if (!id.getPageId().equals(getId())) throw new DbException("tuple not exist in this page");
         if (getNumEmptySlots() == getNumTuples()) throw new DbException("page already empty");
         int slotId = id.getTupleNumber();
         // set header

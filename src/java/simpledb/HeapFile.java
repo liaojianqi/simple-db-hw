@@ -119,7 +119,8 @@ public class HeapFile implements DbFile {
         int num = numPages();
         ArrayList<Page> al = new ArrayList<>();
         for (int i=0;i<num;i++) {
-            HeapPage p = (HeapPage)readPage(new HeapPageId(getId(), i));
+            HeapPage p = (HeapPage)Database.getBufferPool().getPage(tid, new HeapPageId(getId(), i), null);
+            // HeapPage p = (HeapPage)readPage(new HeapPageId(getId(), i));
             boolean added = true;
             try{
                 p.insertTuple(t);
@@ -157,7 +158,19 @@ public class HeapFile implements DbFile {
     }
 
     // see DbFile.java for javadocs
-    public ArrayList<Page> deleteTuple(TransactionId tid, Tuple t) throws DbException,
+    public ArrayList<Page> deleteTuple(TransactionId tid, Tuple t) 
+        throws DbException, IOException, TransactionAbortedException {
+        // some code goes here
+        // not necessary for lab1
+        ArrayList<Page> al = deleteTupleWithoutDisk(tid, t);
+        for (int i=0;i<al.size();i++) {
+            writePage(al.get(i));
+        }
+        return al;
+    }
+
+    // see DbFile.java for javadocs
+    public ArrayList<Page> deleteTupleWithoutDisk(TransactionId tid, Tuple t) throws DbException,
             TransactionAbortedException {
         // some code goes here
         int num = numPages();

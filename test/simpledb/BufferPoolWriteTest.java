@@ -63,7 +63,7 @@ public class BufferPoolWriteTest extends TestUtil.CreateHeapFile {
     /**
      * Unit test for BufferPool.insertTuple()
      */
-    @Test public void insertTuple() throws Exception {
+	@Test public void insertTuple() throws Exception {
         // we should be able to add 504 tuples on an empty page.
         for (int i = 0; i < 504; ++i) {
         	Tuple t = Utility.getHeapTuple(i, 2);
@@ -101,10 +101,10 @@ public class BufferPoolWriteTest extends TestUtil.CreateHeapFile {
         
     	// delete 504 tuples from the first page
     	for (int i = 0; i < 504; ++i) {
-    		Tuple t = tuples.get(i);
+			Tuple t = tuples.get(i);
         	Database.getBufferPool().deleteTuple(tid, t);
         	HeapPage p = (HeapPage) Database.getBufferPool().getPage(tid, t.getRecordId().getPageId(), Permissions.READ_ONLY);
-        	assertEquals(i+1, p.getNumEmptySlots());
+			assertEquals(i+1, p.getNumEmptySlots());
         }
     	
     	// delete 504 tuples from the second page
@@ -116,7 +116,7 @@ public class BufferPoolWriteTest extends TestUtil.CreateHeapFile {
         }
     }
     
-    @Test public void handleManyDirtyPages() throws Exception {
+	@Test public void handleManyDirtyPages() throws Exception {
     	HeapFileDuplicates hfd = new HeapFileDuplicates(empty.getFile(), empty.getTupleDesc(), 10);
     	Database.getCatalog().addTable(hfd, SystemTestUtil.getUUID());
     	Database.getBufferPool().insertTuple(tid, hfd.getId(), Utility.getHeapTuple(1, 2));
