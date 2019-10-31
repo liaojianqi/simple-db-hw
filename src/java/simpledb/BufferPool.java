@@ -3,6 +3,8 @@ package simpledb;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -83,7 +85,9 @@ public class BufferPool {
         
         // 3. set cache
         if (cache.size() >= numPages) {
-            throw new DbException("cache too much");
+            // cache.remove();
+            evictPage();
+            // throw new DbException("cache too much");
         }
         cache.put(pid, p);
         return p;
@@ -157,6 +161,11 @@ public class BufferPool {
         for (int i=0;i<al.size();i++) {
             Page p = al.get(i);
             p.markDirty(true, tid);
+            if (cache.size() >= numPages) {
+                // cache.remove();
+                evictPage();
+                // throw new DbException("cache too much");
+            }
             cache.put(p.getId(), p);
         }
     }
@@ -183,6 +192,11 @@ public class BufferPool {
         for (int i=0;i<al.size();i++) {
             Page p = al.get(i);
             p.markDirty(true, tid);
+            if (cache.size() >= numPages) {
+                // cache.remove();
+                evictPage();
+                // throw new DbException("cache too much");
+            }
             cache.put(p.getId(), p);
         }
     }
@@ -195,7 +209,11 @@ public class BufferPool {
     public synchronized void flushAllPages() throws IOException {
         // some code goes here
         // not necessary for lab1
-
+        Iterator it = cache.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry entry = (Map.Entry)it.next();
+            flushPage((PageId)entry.getKey());
+        }
     }
 
     /** Remove the specific page id from the buffer pool.
@@ -209,6 +227,7 @@ public class BufferPool {
     public synchronized void discardPage(PageId pid) {
         // some code goes here
         // not necessary for lab1
+        cache.remove(pid);
     }
 
     /**
@@ -218,6 +237,10 @@ public class BufferPool {
     private synchronized  void flushPage(PageId pid) throws IOException {
         // some code goes here
         // not necessary for lab1
+        Page p = cache.get(pid);
+        if (p == null) return ;
+        DbFile f = Database.getCatalog().getDatabaseFile(pid.getTableId());
+        f.writePage(p);
     }
 
     /** Write all pages of the specified transaction to disk.
@@ -234,6 +257,19 @@ public class BufferPool {
     private synchronized  void evictPage() throws DbException {
         // some code goes here
         // not necessary for lab1
+        Iterator it = cache.entrySet().iterator();
+        if (!it.hasNext()) {
+            return;
+        }
+        Map.Entry entry = (Map.Entry)it.next();
+        try {
+            // flush
+            flushPage((PageId)entry.getKey());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        // discard
+        discardPage((PageId)entry.getKey());
     }
 
 }
