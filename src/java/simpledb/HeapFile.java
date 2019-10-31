@@ -176,7 +176,8 @@ public class HeapFile implements DbFile {
         int num = numPages();
         ArrayList<Page> al = new ArrayList<>();
         for (int i=0;i<num;i++) {
-            HeapPage p = (HeapPage)readPage(new HeapPageId(getId(), i));
+            HeapPage p = (HeapPage)Database.getBufferPool().getPage(tid, new HeapPageId(getId(), i), null);
+            // HeapPage p = (HeapPage)readPage(new HeapPageId(getId(), i));
             boolean deleted = true;
             try{
                 p.deleteTuple(t);
