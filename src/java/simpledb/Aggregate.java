@@ -156,8 +156,8 @@ public class Aggregate extends Operator {
     public TupleDesc getTupleDesc() {
         // some code goes here
         TupleDesc td;
-        Type gbfieldtype = this.child.getTupleDesc().getFieldType(groupField());
-        if (gbfieldtype != null) {
+        if (groupField() != Aggregator.NO_GROUPING) {
+            Type gbfieldtype = this.child.getTupleDesc().getFieldType(groupField());
             td = new TupleDesc(new Type[]{gbfieldtype, Type.INT_TYPE}, new String[]{"groupValue", "aggregateValue"});
         } else {
             td = new TupleDesc(new Type[]{Type.INT_TYPE}, new String[]{"aggregateValue"});

@@ -51,7 +51,7 @@ public class SeqScan implements OpIterator {
      *       be the actual name of the table in the catalog of the database
      * */
     public String getTableName() {
-        return null;
+        return Database.getCatalog().getTableName(tableid);
     }
 
     /**
@@ -104,7 +104,14 @@ public class SeqScan implements OpIterator {
      */
     public TupleDesc getTupleDesc() {
         // some code goes here
-        return Database.getCatalog().getTupleDesc(this.tableid);
+        TupleDesc td = Database.getCatalog().getTupleDesc(this.tableid);
+        Type[] ts = new Type[td.numFields()];
+        String[] fs = new String[td.numFields()];
+        for (int i=0;i<td.numFields();i++) {
+            ts[i] = td.getFieldType(i);
+            fs[i] = this.tableAlias + "." + td.getFieldName(i);
+        }
+        return new TupleDesc(ts, fs);
     }
 
     public boolean hasNext() throws TransactionAbortedException, DbException {
