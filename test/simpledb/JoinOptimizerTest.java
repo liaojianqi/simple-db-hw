@@ -269,7 +269,7 @@ public class JoinOptimizerTest extends SimpleDbTestBase {
      * Determine whether the orderJoins implementation is doing a reasonable job
      * of ordering joins, and not taking an unreasonable amount of time to do so
      */
-//     @Test
+    @Test
     public void orderJoinsTest() throws ParsingException, IOException,
             DbException, TransactionAbortedException {
         // This test is intended to approximate the join described in the
@@ -380,7 +380,7 @@ public class JoinOptimizerTest extends SimpleDbTestBase {
      * Test a much-larger join ordering, to confirm that it executes in a
      * reasonable amount of time
      */
-//     @Test(timeout = 60000)
+    @Test(timeout = 60000)
     public void bigOrderJoinsTest() throws IOException, DbException,
             TransactionAbortedException, ParsingException {
         final int IO_COST = 103;
@@ -524,7 +524,7 @@ public class JoinOptimizerTest extends SimpleDbTestBase {
      * Test a join ordering with an inequality, to make sure the inequality gets
      * put as the outermost join
      */
-//     @Test
+    @Test
     public void nonequalityOrderJoinsTest() throws IOException, DbException,
             TransactionAbortedException, ParsingException {
         final int IO_COST = 103;

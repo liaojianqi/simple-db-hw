@@ -166,7 +166,7 @@ public class JoinOptimizer {
             card = Math.min(card, card1);
         }
         if (joinOp != Op.EQUALS) {
-            card*=0.3;
+            card/=0.3;
         }
         // some code goes here
         return card <= 0 ? 1 : card;
@@ -233,6 +233,37 @@ public class JoinOptimizer {
 
         // some code goes here
         //Replace the following
+        PlanCache pc = new PlanCache();
+        double minV = Double.MAX_VALUE;
+        for (int i=1;i<=joins.size();i++) {
+            Set<Set<LogicalJoinNode>> ss = enumerateSubsets(joins, i);
+            for (Set<LogicalJoinNode> s : ss) {
+                double last = Double.MAX_VALUE;
+                CostCard cc = null;
+                for (LogicalJoinNode node : s) {
+                    CostCard tmp = computeCostAndCardOfSubplan(
+                        stats,
+                        filterSelectivities,
+                        node,
+                        s,
+                        last,
+                        pc
+                    );
+                    if (tmp != null) {
+                        cc = tmp;
+                        last = cc.cost;
+                    }
+                }
+                if (cc != null) {
+                    pc.addPlan(s, cc.cost, cc.card, cc.plan);
+                    // result
+                    if (i == joins.size() && cc.cost < minV) {
+                        minV = cc.cost;
+                        joins = cc.plan;
+                    }
+                }
+            }
+        }
         return joins;
     }
 
