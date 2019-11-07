@@ -5,6 +5,8 @@ import java.util.*;
 import javax.swing.*;
 import javax.swing.tree.*;
 
+import simpledb.Predicate.Op;
+
 /**
  * The JoinOptimizer class is responsible for ordering a series of joins
  * optimally, and for selecting the best instantiation of a join for a given
@@ -111,7 +113,8 @@ public class JoinOptimizer {
             // HINT: You may need to use the variable "j" if you implemented
             // a join algorithm that's more complicated than a basic
             // nested-loops join.
-            return -1.0;
+            return cost1 + card1*cost2 
+            + card1*card2;
         }
     }
 
@@ -155,7 +158,16 @@ public class JoinOptimizer {
             String field2PureName, int card1, int card2, boolean t1pkey,
             boolean t2pkey, Map<String, TableStats> stats,
             Map<String, Integer> tableAliasToId) {
-        int card = 1;
+        int card = card1*card2;
+        if (joinOp == Op.EQUALS && t1pkey) {
+            card = Math.min(card, card2);
+        }
+        if (joinOp == Op.EQUALS && t2pkey) {
+            card = Math.min(card, card1);
+        }
+        if (joinOp != Op.EQUALS) {
+            card*=0.3;
+        }
         // some code goes here
         return card <= 0 ? 1 : card;
     }
