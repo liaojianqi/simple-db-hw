@@ -76,7 +76,7 @@ public class IntHistogram {
             return vs[index] / (double)width / (double)total;
         case NOT_EQUALS:
             if (v < min || v >= max) return 1;
-            return (width - vs[index]) / (double)width / (double)total;
+            return 1 - (vs[index] / (double)width / (double)total);
         case GREATER_THAN:
             if (v >= max) return 0;
             if (v < min) return 1;
@@ -141,10 +141,18 @@ public class IntHistogram {
     public String toString() {
         // some code goes here
         StringBuffer sb = new StringBuffer();
+        sb.append("========================\n");
+        sb.append("width = " + width);
+        sb.append(", buckets = " + buckets);
+        sb.append(", min = " + min);
+        sb.append(", max = " + max);
+        sb.append("\n");
         for (int i=0;i<buckets;i++) {
-            sb.append("\t");
+            sb.append(" ");
             sb.append(vs[i]);
         }
+        sb.append("\n");
+        sb.append("============end============\n");
         return sb.toString();
     }
 }
