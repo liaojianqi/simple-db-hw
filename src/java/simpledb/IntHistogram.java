@@ -1,8 +1,17 @@
 package simpledb;
 
+import java.util.Vector;
+
 /** A class to represent a fixed-width histogram over a single integer-based field.
  */
 public class IntHistogram {
+
+    int buckets;
+    int min;
+    int max;
+    int width;
+    int[] vs;
+    int total;
 
     /**
      * Create a new IntHistogram.
@@ -20,8 +29,16 @@ public class IntHistogram {
      * @param min The minimum integer value that will ever be passed to this class for histogramming
      * @param max The maximum integer value that will ever be passed to this class for histogramming
      */
+    // [, )
     public IntHistogram(int buckets, int min, int max) {
-    	// some code goes here
+        // some code goes here
+        max++;
+        this.buckets = buckets;
+        this.min = min;
+        this.max = max;
+        this.width = (max - min + (buckets - 1)) / buckets;
+        this.vs = new int[buckets];
+        this.total = 0;
     }
 
     /**
@@ -29,7 +46,10 @@ public class IntHistogram {
      * @param v Value to add to the histogram
      */
     public void addValue(int v) {
-    	// some code goes here
+        // some code goes here
+        int index = (v - min) / width;
+        vs[index]+=1;
+        total++;
     }
 
     /**
@@ -43,8 +63,61 @@ public class IntHistogram {
      * @return Predicted selectivity of this particular operator and value
      */
     public double estimateSelectivity(Predicate.Op op, int v) {
+        // some code goes here
+        int index = (v - min) / width;
 
-    	// some code goes here
+        // System.out.println("v = " + v);
+        // System.out.println("min = " + min);
+        // System.out.println("width = " + width);
+
+        switch (op) {
+        case EQUALS:
+            if (v < min || v >= max) return 0;
+            return vs[index] / (double)width / (double)total;
+        case NOT_EQUALS:
+            if (v < min || v >= max) return 1;
+            return (width - vs[index]) / (double)width / (double)total;
+        case GREATER_THAN:
+            if (v >= max) return 0;
+            if (v < min) return 1;
+            int b_right = (1 + index) * width + min;
+            double onlyB = (vs[index] / (double)total) * ((b_right - v - 1) / (double)width);
+            for (int i=index+1;i<buckets;i++) {
+                onlyB += (vs[i] / (double)total);
+            }
+            return onlyB;
+        case GREATER_THAN_OR_EQ:
+            if (v >= max) return 0;
+            if (v < min) return 1;
+            b_right = (1 + index) * width + min;
+            onlyB = (vs[index] / (double)total) * ((b_right - v) / (double)width);
+            for (int i=index+1;i<buckets;i++) {
+                onlyB += (vs[i] / (double)total);
+            }
+            return onlyB;
+        case LESS_THAN:
+            // !!!Notice: left is not euqal to right, because interval is [, )
+            if (v < min) return 0;
+            if (v >= max) return 1;
+            int b_left = index * width + min;
+            onlyB = (vs[index] / (double)total) * ((v - b_left) / (double)width);
+            for (int i=0;i<index;i++) {
+                onlyB += (vs[i] / (double)total);
+            }
+            return onlyB;
+        case LESS_THAN_OR_EQ:
+            if (v < min) return 0;
+            if (v >= max) return 1;
+            b_left = index * width + min;
+            onlyB = (vs[index] / (double)total) * ((v - b_left + 1) / (double)width);
+            for (int i=0;i<index;i++) {
+                onlyB += (vs[i] / (double)total);
+            }
+            return onlyB;
+        default:
+            break;
+        }
+
         return -1.0;
     }
     
@@ -67,6 +140,11 @@ public class IntHistogram {
      */
     public String toString() {
         // some code goes here
-        return null;
+        StringBuffer sb = new StringBuffer();
+        for (int i=0;i<buckets;i++) {
+            sb.append("\t");
+            sb.append(vs[i]);
+        }
+        return sb.toString();
     }
 }
