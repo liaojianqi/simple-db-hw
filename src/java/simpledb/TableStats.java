@@ -74,6 +74,8 @@ public class TableStats {
     TupleDesc td;
     int sz;
     Vector<Object> vs;
+    int total;
+    HashSet<PageId> hs;
     /**
      * Create a new TableStats object, that keeps track of statistics on each
      * column of a table
@@ -107,6 +109,8 @@ public class TableStats {
             hasSet.add(false);
         }
         vs = new Vector<>(sz);
+        total = 0;
+        hs = new HashSet<>();
 
         // 1. get min and max
         DbFileIterator it = df.iterator(new TransactionId());
@@ -114,6 +118,8 @@ public class TableStats {
             it.open();
             while (it.hasNext()) {
                 Tuple t = it.next();
+                total++;
+                hs.add(t.getRecordId().getPageId());
                 for (int i=0;i<sz;i++) {
                     Field f = t.getField(i);
                     if (f.getType() == Type.INT_TYPE) {
@@ -179,17 +185,6 @@ public class TableStats {
      */
     public double estimateScanCost() {
         // some code goes here
-        HashSet<PageId> hs = new HashSet<>();
-        DbFileIterator it = df.iterator(new TransactionId());
-        try {
-            it.open();
-            while (it.hasNext()) {
-                Tuple t = it.next();
-                hs.add(t.getRecordId().getPageId());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
         return hs.size() * (double)ioCostPerPage;
     }
 
@@ -204,17 +199,6 @@ public class TableStats {
      */
     public int estimateTableCardinality(double selectivityFactor) {
         // some code goes here
-        int total = 0;
-        DbFileIterator it = df.iterator(new TransactionId());
-        try {
-            it.open();
-            while (it.hasNext()) {
-                it.next();
-                total++;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
         return (int)(total * selectivityFactor);
     }
 
