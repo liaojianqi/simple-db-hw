@@ -191,11 +191,31 @@ public class BTreeFile implements DbFile {
 	 * @return the left-most leaf page possibly containing the key field f
 	 * 
 	 */
-	private BTreeLeafPage findLeafPage(TransactionId tid, HashMap<PageId, Page> dirtypages, BTreePageId pid, Permissions perm,
-			Field f) 
-					throws DbException, TransactionAbortedException {
+	private BTreeLeafPage findLeafPage(
+		TransactionId tid, HashMap<PageId, Page> dirtypages, BTreePageId pid, Permissions perm, Field f) 
+			throws DbException, TransactionAbortedException {
 		// some code goes here
-        return null;
+		if (pid.pgcateg() == BTreePageId.LEAF) {
+			return (BTreeLeafPage)getPage(tid, dirtypages, pid, perm);
+		}
+		Page pp = getPage(tid, dirtypages, pid, Permissions.READ_ONLY);
+		BTreeInternalPage p = (BTreeInternalPage)pp;
+		Iterator<BTreeEntry> it = p.iterator();
+		if (f == null) {
+			return findLeafPage(tid, dirtypages, it.next().getLeftChild(), perm, f);
+		}
+		BTreeEntry be = null;
+		while (it.hasNext()) {
+			be = it.next();
+			if (be.getKey().compare(Predicate.Op.GREATER_THAN_OR_EQ, f)) {
+				return findLeafPage(tid, dirtypages, be.getLeftChild(), perm, f);
+			}
+		}
+		// never occur
+		if (be != null) {
+			return findLeafPage(tid, dirtypages, be.getRightChild(), perm, f);
+		}
+		return null;
 	}
 	
 	/**
