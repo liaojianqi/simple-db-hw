@@ -142,14 +142,8 @@ public class Parser {
         for (int i = 0; i < from.size(); i++) {
             ZFromItem fromIt = from.elementAt(i);
             try {
-
-                int id = Database.getCatalog().getTableId(fromIt.getTable()); // will
-                                                                              // fall
-                                                                              // through
-                                                                              // if
-                                                                              // table
-                                                                              // doesn't
-                                                                              // exist
+                // will fall through if table doesn't exist
+                int id = Database.getCatalog().getTableId(fromIt.getTable());
                 String name;
 
                 if (fromIt.getAlias() != null)
@@ -271,7 +265,7 @@ public class Parser {
     }
 
     private Transaction curtrans = null;
-    private boolean inUserTrans = false;
+    private boolean inUserTrans = false; // user trans or auto trans
 
     public Query handleQueryStatement(ZQuery s, TransactionId tId)
             throws TransactionAbortedException, DbException, IOException,
@@ -584,14 +578,11 @@ public class Parser {
             "insert", "delete", "values", "into" };
 
     public static void main(String argv[]) throws IOException {
-
         if (argv.length < 1 || argv.length > 4) {
             System.out.println("Invalid number of arguments.\n" + usage);
             System.exit(0);
         }
-
         Parser p = new Parser();
-
         p.start(argv);
     }
 
@@ -603,10 +594,11 @@ public class Parser {
     }
 
     protected boolean interactive = true;
-
+    
     protected void start(String[] argv) throws IOException {
         // first add tables to database
         Database.getCatalog().loadSchema(argv[0]);
+        // add tableStats for each table
         TableStats.computeStatistics();
 
         String queryFile = null;

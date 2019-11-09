@@ -284,12 +284,14 @@ public class LogicalPlan {
      *  @throws ParsingException if the logical plan is not valid
      *  @return A OpIterator representing this plan.
      */ 
+    // finally, physicalPlan is a Project
     public OpIterator physicalPlan(TransactionId t, Map<String,TableStats> baseTableStats, boolean explain) throws ParsingException {
         Iterator<LogicalScanNode> tableIt = tables.iterator();
         HashMap<String,String> equivMap = new HashMap<String,String>();
         HashMap<String,Double> filterSelectivities = new HashMap<String, Double>();
         HashMap<String,TableStats> statsMap = new HashMap<String,TableStats>();
 
+        // 1. LogicalScanNode -> SeqScan
         while (tableIt.hasNext()) {
             LogicalScanNode table = tableIt.next();
             SeqScan ss = null;
@@ -306,6 +308,7 @@ public class LogicalPlan {
 
         }
 
+        // 2. LogicalFilterNode -> Filter
         Iterator<LogicalFilterNode> filterIt = filters.iterator();        
         while (filterIt.hasNext()) {
             LogicalFilterNode lf = filterIt.next();
@@ -344,10 +347,12 @@ public class LogicalPlan {
             //s.addSelectivityFactor(estimateFilterSelectivity(lf,statsMap));
         }
         
+        // 3. Join Optimizer
         JoinOptimizer jo = new JoinOptimizer(this,joins);
 
         joins = jo.orderJoins(statsMap,filterSelectivities,explain);
 
+        // 4. LogicalJoinNode -> OpIterator
         Iterator<LogicalJoinNode> joinIt = joins.iterator();
         while (joinIt.hasNext()) {
             LogicalJoinNode lj = joinIt.next();
@@ -382,7 +387,7 @@ public class LogicalPlan {
                 throw new ParsingException("Unknown table in WHERE clause " + lj.t2Alias);
             
             OpIterator j;
-            j = jo.instantiateJoin(lj,plan1,plan2);
+            j = jo.instantiateJoin(lj,plan1,plan2); // actually, j is a Join
             subplanMap.put(t1name, j);
 
             if (!isSubqueryJoin) {
@@ -406,6 +411,7 @@ public class LogicalPlan {
             throw new ParsingException("Query does not include join expressions joining all nodes!");
         }
         
+        // 5. get result and process
         OpIterator node =  (OpIterator)(subplanMap.entrySet().iterator().next().getValue());
 
         //walk the select list, to determine order in which to project output fields
@@ -416,9 +422,7 @@ public class LogicalPlan {
             if (si.aggOp != null) {
                 outFields.add(groupByField!=null?1:0);
                 TupleDesc td = node.getTupleDesc();
-//                int  id;
                 try {
-//                    id = 
                     td.fieldNameToIndex(si.fname);
                 } catch (NoSuchElementException e) {
                     throw new ParsingException("Unknown field " +  si.fname + " in SELECT list");
