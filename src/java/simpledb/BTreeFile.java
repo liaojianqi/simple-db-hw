@@ -207,6 +207,7 @@ public class BTreeFile implements DbFile {
 		BTreeEntry be = null;
 		while (it.hasNext()) {
 			be = it.next();
+			// FIXME: GREATER_THAN_OR_EQ or GREATER_THAN
 			if (be.getKey().compare(Predicate.Op.GREATER_THAN_OR_EQ, f)) {
 				return findLeafPage(tid, dirtypages, be.getLeftChild(), perm, f);
 			}
@@ -267,8 +268,50 @@ public class BTreeFile implements DbFile {
 		// the new entry.  getParentWithEmtpySlots() will be useful here.  Don't forget to update
 		// the sibling pointers of all the affected leaf pages.  Return the page into which a 
 		// tuple with the given key field should be inserted.
-        return null;
+
+		BTreeInternalPage par = getParentWithEmptySlots(tid, dirtypages, page.getParentId(), field);
+		Iterator<Tuple> it = page.iterator();
+		Vector<Tuple> vs = new Vector<>();
+		while (it.hasNext()) {
+			Tuple t = it.next();
+			vs.add(t);
+		}
+		int x = vs.size()/2;
+		BTreeLeafPage p = (BTreeLeafPage)getEmptyPage(tid, dirtypages, BTreePageId.LEAF);
+		for (int i=x;i<vs.size();i++) {
+			page.deleteTuple(vs.get(i));
+		}
+		for (int i=x;i<vs.size();i++) {
+			p.insertTuple(vs.get(i));
+		}
 		
+		// left and right
+		if (page.getRightSiblingId() != null) {
+			BTreeLeafPage right = (BTreeLeafPage)getPage(tid, dirtypages, page.getRightSiblingId(), Permissions.READ_WRITE);
+			right.setLeftSiblingId(p.getId());
+			dirtypages.put(right.getId(), right);
+		}
+		p.setRightSiblingId(page.getRightSiblingId());
+		page.setRightSiblingId(p.getId());
+		p.setLeftSiblingId(page.getId());
+		p.setParentId(par.getId());
+		dirtypages.put(page.getId(), page);
+		dirtypages.put(p.getId(), p);
+		// insert to parent
+		BTreeEntry e = new BTreeEntry(
+			vs.get(x).getField(keyField),
+			page.getId(),
+			p.getId()
+		);
+		par.insertEntry(e);
+		dirtypages.put(par.getId(), par);
+		
+		// just for debug
+		// System.out.println("page.id = " + page.getId());
+		// System.out.println("p.id = " + p.getId());
+
+		// findLeafPage
+		return findLeafPage(tid, dirtypages, par.getId(), Permissions.READ_WRITE, field);
 	}
 	
 	/**
@@ -305,7 +348,51 @@ public class BTreeFile implements DbFile {
 		// the parent pointers of all the children moving to the new page.  updateParentPointers()
 		// will be useful here.  Return the page into which an entry with the given key field
 		// should be inserted.
-		return null;
+		BTreeInternalPage par = getParentWithEmptySlots(tid, dirtypages, page.getParentId(), field);
+		Iterator<BTreeEntry> it = page.iterator();
+		Vector<BTreeEntry> vs = new Vector<>();
+		while (it.hasNext()) {
+			BTreeEntry t = it.next();
+			vs.add(t);
+		}
+		int x = vs.size()/2;
+		BTreeInternalPage p = (BTreeInternalPage)getEmptyPage(tid, dirtypages, BTreePageId.INTERNAL);
+		for (int i=x;i<vs.size();i++) {
+			page.deleteKeyAndRightChild(vs.get(i));
+		}
+		// When an internal node is split, you will need to update the parent pointers of all the children that were moved.
+		for (int i=x+1;i<vs.size();i++) {
+			BTreeEntry t = vs.get(i);
+			BTreePage tmp = (BTreePage)getPage(tid, dirtypages, t.getRightChild(), Permissions.READ_WRITE);
+			tmp.setParentId(p.getId());
+			p.insertEntry(t);
+			dirtypages.put(tmp.getId(), tmp);
+		}
+		BTreeEntry t = vs.get(x);
+		BTreePage tmp = (BTreePage)getPage(tid, dirtypages, t.getRightChild(), Permissions.READ_WRITE);
+		tmp.setParentId(p.getId());
+		dirtypages.put(tmp.getId(), tmp);
+		// left and right
+		p.setParentId(par.getId());
+		dirtypages.put(page.getId(), page);
+		dirtypages.put(p.getId(), p);
+		// insert to parent
+		BTreeEntry e = new BTreeEntry(
+			vs.get(x).getKey(),
+			page.getId(),
+			p.getId()
+		);
+		par.insertEntry(e);
+		dirtypages.put(page.getParentId(), par);
+
+		// findLeafPage
+		if (vs.get(x).getKey().compare(Predicate.Op.EQUALS, field)) {
+			return par;
+		} else if (vs.get(x).getKey().compare(Predicate.Op.GREATER_THAN, field)) {
+			return page;
+		} else {
+			return p;
+		}
 	}
 	
 	/**
